@@ -14,9 +14,9 @@ import matplotlib.pyplot as plt
 
 import geopy.distance as Distance
 
-import bathymetry
-import seabed
-import surface
+import UWAEnvTools.bathymetry as bathymetry
+import UWAEnvTools.seabed as seabed
+import UWAEnvTools.surface as surface
 
 # ARL extra modules
 import arlpy.uwapm as pm
