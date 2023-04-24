@@ -35,6 +35,11 @@ class Source():
     def set_name(self,p_name = 'Point source on grid'):
         self.name = p_name
         
+    def set_singleton_course(self,p_latlon_tuple):
+        course = []
+        course.append(p_latlon_tuple)
+        self.course = course
+        
     def generate_course_sailed(self,
                         p_CPA_lat_lon,
                         p_CPA_deviation_m,
