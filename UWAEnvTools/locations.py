@@ -7,6 +7,9 @@ Created on Thu Nov 18 10:14:40 2021
 
 import numpy as np
 
+import UWAEnvTools.directories_and_files as _dirs
+
+
 class Location():
     
     def __init__(self,
@@ -46,7 +49,7 @@ class Location():
             self.LAT_EXTENT_TUPLE = (self.LAT - self.DEG_OFFSET , self.LAT + self.DEG_OFFSET )
             self.LON_EXTENT_TUPLE = (self.LON - self.DEG_OFFSET , self.LON + self.DEG_OFFSET )
             self.fname_bathy = r'C:/Users/Jasper/Desktop/MASC/Environmental Data/NS_Bathy/gebco_2021_n52.8662109375_s38.3203125_w-76.376953125_e-50.537109375.nc'
-            self.ssp_file = r'C:/Users/Jasper/Desktop/MASC/Environmental Data/blouin_SSP_coefficients.txt'
+            self.ssp_file = r'C:/Users/Jasper/Documents/Repo/pyDal/UWAEnvTools/data/interim/ssp/mean_SSP_2019.csv'
             self.bottom_id  ='Sand-silt'
             
 
@@ -62,23 +65,27 @@ class Location():
             self.LON = ( self.hyd_1_lon + self.hyd_2_lon ) / 2 # This is CPA
             self.LAT_EXTENT_TUPLE = (self.LAT - self.DEG_OFFSET , self.LAT + self.DEG_OFFSET )
             self.LON_EXTENT_TUPLE = (self.LON - self.DEG_OFFSET , self.LON + self.DEG_OFFSET )
-            self.fname_bathy = r'C:/Users/Jasper/Desktop/MASC/Environmental Data/NS_GEBCO/gebco_2021_n52.8662109375_s38.3203125_w-76.376953125_e-50.537109375.nc'
-            self.ssp_file = r'C:/Users/Jasper/Desktop/MASC/Environmental Data/blouin_SSP_coefficients.txt'
+            self.fname_bathy = _dirs.FNAME_GEBCO_FERGUSON_10M
+            self.ssp_file = _dirs.FNAME_BLOUIN_SSP
             self.bottom_id  ='Sand-silt'
             
         if environment_string == 'Patricia Bay':
             self.location_title = 'Patricia Bay, BC'
             # self.EXTENT_DEG_OFFSET = 0.005
-            self.EXTENT_DEG_OFFSET = 0.005
-            self.CORRIDOR_LON_OFFSET = 0.003
-            self.CORRIDOR_LAT_OFFSET = 0.0005
+            self.EXTENT_DEG_OFFSET = 0.0025
+            self.CORRIDOR_LON_OFFSET = 0.0015
+            self.CORRIDOR_LAT_OFFSET = 0.001
             self.COURSE_DISTANCE = 300
             self.hyd_1_lat   = 48.65916667 # north hyd
             self.hyd_1_lon   = -123.47860000
+            self.HYD_1_X     = 54.
+            self.HYD_1_Y     = 84.            
             self.hyd_1_z     = 24.1
             self.hyd_2_lat   = 48.65765000 #south hyd
             self.hyd_2_lon   = -123.48006667
             self.hyd_2_z     = 41.2
+            self.HYD_2_X     = -54.
+            self.HYD_2_Y     = -84.            
             self.LAT = ( self.hyd_1_lat + self.hyd_2_lat ) / 2
             self.LON = ( self.hyd_1_lon + self.hyd_2_lon ) / 2
             # 
@@ -87,9 +94,9 @@ class Location():
             includes the entirety of the runs, the hydrophones, and a bit
             more beyond the bounds thereby defined.
             """
-            self.LAT_EXTENT_TUPLE = (
-                np.minimum(self.hyd_1_lat,self.hyd_2_lat) - 0.0005,
-                np.maximum(self.hyd_1_lat,self.hyd_2_lat) + 0.0005)
+            self.LAT_EXTENT_TUPLE = ( 
+                self.LAT - self.EXTENT_DEG_OFFSET,
+                self.LAT + self.EXTENT_DEG_OFFSET)
             self.LON_EXTENT_TUPLE = ( 
                 self.LON - self.EXTENT_DEG_OFFSET,
                 self.LON + self.EXTENT_DEG_OFFSET)
@@ -107,10 +114,10 @@ class Location():
                 self.LON + self.CORRIDOR_LON_OFFSET)
             
 
-            self.fname_bathy = r'C:/Users/Jasper/Desktop/MASC/Environmental Data/BC_CHS_2m/2m_Combine_PatBay.txt'
-            self.ssp_file = r'C:/Users/Jasper/Desktop/MASC/Environmental Data/blouin_SSP_coefficients.txt'
-            self.bottom_id  ='Sand-silt'
-            
+            self.fname_bathy = _dirs.FNAME_CHS_PAT_BAY_2M
+            self.ssp_file = _dirs.FNAME_BLOUIN_SSP
+            self.bottom_id  ='Coarse-sand' #See Biffard 2011 thesis page 133.
+            # Biffard said gravel, but no gravel parameter in Saleh / Rabah
             
         if environment_string == 'Pekeris Waveguide': #use the NS bathy for a basis nd set it to desired depth elsewhere.
             self.location_title = 'Pekeris Waveguide'

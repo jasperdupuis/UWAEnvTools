@@ -1,6 +1,8 @@
 import numpy as np
 import ast
-
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
 
 class SSP():
     """
@@ -133,3 +135,88 @@ class SSP_Isovelocity(SSP):
         c = c * 1500.
         self.dict['Summer'] = c
         self.dict['Winter'] = c
+        
+
+class SSP_Measured(SSP):
+    """
+    A set of measured profiles, or a mean of a profile.
+    
+    Must provide a depth vector.
+    """
+    
+    
+    def tolerant_mean(p_list):
+        """
+        For averaging together different-length arrays in a list.
+        e.g. here the CTD is not uniform depth every cast.
+        """
+        lens = [len(i) for i in p_list]
+        arr = np.ma.empty((np.max(lens),len(p_list)))
+        arr.mask = True
+        for idx, l in enumerate(p_list):
+            arr[:len(l),idx] = l
+        return arr.mean(axis = -1), arr.std(axis=-1)
+    
+    def set_depths(self,p_depths):
+        self.depths = p_depths
+    
+    def generate_mean_from_ssps_and_plot(self,
+                      p_source_dir,
+                      p_target_dir,
+                      datetime_filter='2019'):
+        """
+        For a given querty string on filenames in a source directory,
+        calculate the mean SSP.
+        Mean is calculated on the longest array length.
+        See tolerant_mean for details.
+        """
+
+        dirname_source = r'C:\Users\Jasper\Documents\Repo\pyDal\UWAEnvTools\data\Pat Bay CTDs\\'
+        dirname_target = r'C:\Users\Jasper\Documents\Repo\pyDal\UWAEnvTools\data\interim\ssp\\'
+        files = os.listdir(dirname_source)
+        line_skip = 28
+        fig, ax = plt.subplots(1,1)
+        v_list = []
+        z_list = []
+        for f in files:
+            if 'mean' in f: continue
+            if datetime_filter in f:
+                strs = f.split('_')
+                t = strs[1] + strs[2].split('.')[0]
+                df = pd.read_csv( dirname_source + f , skiprows=line_skip)
+                x = df[df.columns[6]]
+                y = df[df.columns[1]]
+                ax.plot(x,y, label = t)
+                z_list.append(np.asarray(y))
+                v_list.append(np.asarray(x))
+        v, v_error = self.tolerant_mean(v_list)
+        z, _ = self.tolerant_mean(z_list)
+        ax.plot(v,z, label = 'MEAN')
+        ax.invert_yaxis()
+        plt.legend()
+        
+        df_res = pd.DataFrame(data={'Depth (m)':z,'Sound speed(m/s)':v})
+        df_res.to_csv(dirname_target + 'mean_SSP_' + datetime_filter + '.csv')
+
+        
+    
+    
+    def read_profile(self,
+                     fname='explicit_must_be_passed'):
+        """
+        Read in a real SSP, where the first column is depth and the second is
+        sound speed in a CSV.
+        
+        Sets both Winter and Summer profiles to be the same.
+        """
+
+        ## TODO
+        df = pd.read_csv(fname)
+        
+        depths = df[df.columns[0]]
+        summer_c = df[df.columns[1]]
+        winter_c = df[df.columns[1]]
+
+        self.set_depths(depths)
+        self.dict['Summer'] = summer_c
+        self.dict['Winter'] = winter_c

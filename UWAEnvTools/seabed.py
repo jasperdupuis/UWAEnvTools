@@ -1,5 +1,6 @@
 import numpy as np
 
+import UWAEnvTools.directories_and_files as _dirs
 
 class SeaBed():
     """
@@ -19,7 +20,7 @@ class SeaBed():
 
     def read_default_dictionary(
             self,
-            fname = r'C:/Users/Jasper/Desktop/MASC/Environmental Data/seabed_numbers_from_saleh_rabah.txt'):
+            fname = _dirs.FNAME_BOTTOM_TYPE_DICTIONARY):
         dictionary = dict()
         with open(fname) as f:
             lines = f.readlines()

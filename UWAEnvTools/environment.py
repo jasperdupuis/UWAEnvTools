@@ -17,6 +17,9 @@ import geopy.distance as Distance
 import UWAEnvTools.bathymetry as bathymetry
 import UWAEnvTools.seabed as seabed
 import UWAEnvTools.surface as surface
+import UWAEnvTools.directories_and_files as _dirs
+
+
 
 # ARL extra modules
 import arlpy.uwapm as pm
@@ -96,6 +99,7 @@ class Environment():
                  p_NUM_LON = 100,
                  p_NUM_SSP = 100,
                  ):
+        self.hydro_name = r'not set'
         self.bathymetry = r'not set'
         self.ssp = r'not set'
         self.surface = r'not set'
@@ -189,6 +193,9 @@ class Environment():
         
     def calculate_exact_TLs_common(self,**kwargs):
         pass
+    
+    def set_hydrophone_name(self,p_name):
+        self.hydro_name = p_name
 
     
 class Environment_RAM(Environment):
@@ -329,8 +336,6 @@ class Environment_RAM(Environment):
 
         for freq in self.freqs:
             TL_RES = []
-            LAT = []
-            LON = []
 
             for TX_SOURCE in self.source.course:
                 # South hydrophone
@@ -343,24 +348,43 @@ class Environment_RAM(Environment):
                             BASIS_SIZE_DEPTH = kwargs['BASIS_SIZE_DEPTH'],
                             BASIS_SIZE_DISTANCE = kwargs['BASIS_SIZE_DISTANCE'],
                         )
+                
                 results_RAM = self.run_model()
-                
-                results_RAM['X'],results_RAM['Y'] = \
-                    flat_earth_approx.RAM_distances_to_latlon(
+
+                if kwargs['POINT_OR_LINE_STR'] == 'LINE':
+                    results_RAM['X'],results_RAM['Y'] = \
+                        flat_earth_approx.RAM_distances_to_latlon(
+                            p_cpa = (self.location.LAT,self.location.LON), 
+                            p_rx = self.rx_latlon, 
+                            p_tx = TX_SOURCE, 
+                            p_r = results_RAM['Ranges'])
+                    
+                    results_RAM['TX Lat'] = TX_SOURCE[0]
+                    results_RAM['TX Lon'] = TX_SOURCE[1]
+                    
+                    TL_RES.append(results_RAM)
+                    
+                if kwargs['POINT_OR_LINE_STR'] == 'POINT':
+                    # extract just the TL from TX to RX, and make sure
+                    # The correct geometries are extracted for later processing.
+                    (tx_x, tx_y) = flat_earth_approx.latlon_to_xy(
                         p_cpa = (self.location.LAT,self.location.LON), 
-                        p_rx = self.rx_latlon, 
-                        p_tx = TX_SOURCE, 
-                        p_r = results_RAM['Ranges'])
-                
-                results_RAM['TX Lat'] = TX_SOURCE[0]
-                results_RAM['TX Lon'] = TX_SOURCE[1]
-                
-                TL_RES.append(results_RAM)
-                LAT.append(TX_SOURCE[0])
-                LON.append(TX_SOURCE[1])
-                                
+                        p_latlon = TX_SOURCE
+                        )                                        
+                    
+                    result = dict()
+                    
+                    result['X'] = [tx_x]
+                    result['Y'] = [tx_y]
+                    result['TX Lat'] = [TX_SOURCE[0]]
+                    result['TX Lon'] = [TX_SOURCE[1]]
+                    result['TL Line'] = [results_RAM['TL Line'][-1]]
+                    
+                    TL_RES.append(result)
+                        
             self.RAM_dictionaries_to_unstruc(TL_RES)
-                
+
+                        
             df_res = pd.DataFrame(
                 data= {'X' : self.X_unstruc,
                        'Y' : self.Y_unstruc,
@@ -368,11 +392,22 @@ class Environment_RAM(Environment):
                        'Lats TX' : self.lats_TX_unstruc,
                        'Lons TX' : self.lons_TX_unstruc,
                        })
-            df_res.to_csv(
-                self.model_target_dir       \
-                    + str(freq).zfill(4)    \
-                    + '.csv')
-            
+            if not (self.hydro_name == r'not set'):
+                # Writing two files.
+                df_res.to_csv(
+                    self.model_target_dir       \
+                        + str(freq).zfill(4)    \
+                        + '_'                   \
+                        + self.hydro_name       \
+                        + '.csv')
+            else: 
+                df_res.to_csv(
+                    self.model_target_dir       \
+                        + str(freq).zfill(4)    \
+                        + '_'                   \
+                        + self.hydro_name     \
+                        + '.csv')
+                
 
     def RAM_dictionaries_to_unstruc(self,p_dictionary_list):
         """
@@ -464,10 +499,12 @@ class Environment_RAM(Environment):
             )
         return TL_interp,xi
         
-    def plot_TL_interpolation_with_couse(self,
-                              p_r,
-                              p_x_track,
-                              p_y_track):        
+    def plot_TL_interpolation_with_comex_circle_and_nominal_track(self,
+                              p_TL,
+                              p_xlim,
+                              p_ylim,
+                              p_r = 100,
+                              ):        
         x_comex = []
         y_comex = []
         for theta in range(360):
@@ -475,18 +512,28 @@ class Environment_RAM(Environment):
             x_comex.append( np.cos(theta) * p_r )
             y_comex.append(np.sin(theta) * p_r )
 
-        ext = [-1*self.xlim_interp,
-               self.xlim_interp,
-               -1*self.ylim_interp,
-               self.ylim_interp ]
+        y_nominal_track = np.linspace(-100,100,100)
+        x_nominal_track = (-1/np.sqrt(3)) * np.linspace(-100,100,100)
+
+
+        ext = [ -1*p_xlim,
+                p_xlim,
+                -1*p_ylim,
+                p_ylim ]
         plt.figure();plt.imshow(
-            self.TL_interp,
+            p_TL,
             extent = ext,
             origin='lower',
             aspect='auto');
-        plt.scatter(p_x_track,p_y_track,color='r',marker='.',label = 'Course')
+        plt.colorbar()
         plt.scatter(x_comex,y_comex,color='c',marker='x',label='COMEX/FINEX circle')
-        plt.legend()
+        plt.scatter(
+            x_nominal_track,
+            y_nominal_track,
+            color='r',
+            marker='.',
+            label='nominal track')
+        
 
     
 class Environment_PYAT(Environment):
