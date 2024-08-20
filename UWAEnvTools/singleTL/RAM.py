@@ -10,14 +10,20 @@ Other modules can then put this / these function(s) in a loop over frequency
 or other parameters that can be passed. But this should work on its own too
 from __main__ call
 
-Does not handle storing results to file!
+Does not handle storing results to file yet!
 
 """
 
 import numpy as np
 import pandas as pd
+import scipy.interpolate as interpolate
 import matplotlib.pyplot as plt
 
+"""
+The imports from pydal are bad form generally as they tightly couple these two packages.
+But, I want to maintain these variables and functions in one location only instead of chasing them around everywhere.
+"""
+import pydal.utils 
 import pydal._variables as _vars
 import pydal._directories_and_files as _dirs
 
@@ -314,6 +320,40 @@ def read_interpolate_plot_TL_df(p_fname_df,
         p_ylim,
         p_r = p_comex)
     
+
+def interpolate_TL_over_XY_set_single_f(
+        p_freq_target,
+        p_f_basis,
+        p_gram_x,
+        p_gram_y,
+        p_dir_RAM   = _dirs.DIR_RAM_DATA,
+        p_hydro     = _vars.HYDROPHONE ):
+    if p_freq_target in _vars.RAM_F_FAILS:
+        # Leave RL unchanged but note the failure
+        return np.zeros_like(p_gram_x)
+    fname_TL        = p_dir_RAM + str(p_freq_target).zfill(4) + r'_' + p_hydro.capitalize() + '.csv'
+    X,Y,TL          = read_XY_TL_df(fname_TL)
+    
+    TL_interped     = interpolate.griddata(
+        ( X , Y ) ,
+        TL ,
+        ( p_gram_x , p_gram_y ) )
+    return TL_interped
+
+
+def interpolate_TL_over_XY_set_multi_f(
+        p_freq_targets,
+        p_f_basis,
+        p_gram_x,
+        p_gram_y,
+        p_dir_RAM   = _dirs.DIR_RAM_DATA,
+        p_hydro     = _vars.HYDROPHONE ):
+    result = dict()
+    for f in p_freq_targets:
+        result[f] = interpolate_TL_over_XY_set_single_f(
+            f, p_f_basis, p_gram_x, p_gram_y,p_dir_RAM,p_hydro)
+    return result
+
 
 if __name__ == '__main__':
     import time

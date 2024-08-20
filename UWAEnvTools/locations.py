@@ -130,6 +130,4 @@ class Location():
             self.fname_bathy = r'C:/Users/Jasper/Desktop/MASC/Environmental Data/NS_Bathy/gebco_2021_n52.8662109375_s38.3203125_w-76.376953125_e-50.537109375.nc'
             self.ssp_file = r'C:/Users/Jasper/Desktop/MASC/Environmental Data/blouin_SSP_coefficients.txt'
             self.bottom_id  ='Coarse-sand'
-            
- 
-
+         
