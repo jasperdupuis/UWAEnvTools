@@ -1,3 +1,11 @@
+# My things to ignore:
+*.txt
+*.jpeg
+*.jpg
+*.csv
+*.pdf
+*.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
