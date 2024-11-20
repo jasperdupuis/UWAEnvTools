@@ -29,6 +29,39 @@ class SSP():
         return self.dict['Winter']
 
 
+class SSP_Pat_Bay_Data(SSP):
+    
+    def read_profile(self,
+                     p_fdir  = r'C:\Users\Jasper\Documents\Repo\pyDal\pyDal-cookie\data\raw\Pat Bay CTDs',
+                     p_yyyymm= '201907'):
+        """
+        
+        Get and create a basis function over the SSP profiles form 2019 and 
+        2020 data.
+        
+        201907 is summer 202002 is winter.
+        
+        """
+        
+        list_files = os.listdir(p_fdir)
+        list_files = [x for x in list_files if p_yyyymm in x]
+        
+        depths = []
+        speeds = []
+        for f in list_files:
+            # f = list_files[0]
+            fname = p_fdir + r'\\' + f
+            df = pd.read_csv( fname, skiprows=28 )
+            depths += list ( df ['Depth (Meter)'] . values)
+            speeds += list ( df ['Sound velocity (Meters per Second)'] . values)
+        
+        basis = np.linspace(0,np.max(depths),num=100)
+        ssp_interp = np.interp(basis,depths,speeds)
+    
+        self.depths = basis
+        self.dict['Summer'] = ssp_interp
+        self.dict['Winter'] = ssp_interp
+            
     
 class SSP_Blouin_2015(SSP):
     """

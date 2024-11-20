@@ -1,0 +1,55 @@
+
+ __________________________________________________________________________
+ Running FIELD
+ Sums modes, producing pressure
+
+ Point source
+ Omnidirectional source
+ Coherent mode addition
+
+ __________________________________________________________________________
+
+ Number of Profile ranges, RProf =            1
+ Profile ranges, RProf (km)
+   0.00000    
+
+ Range-independent calculation
+
+ __________________________________________________________________________
+
+ Number of Receiver ranges, Rr =          200
+ Receiver ranges, Rr (km)
+   0.00000      0.802643E-03  0.160529E-02  0.240793E-02  0.321057E-02
+  0.401322E-02  0.481586E-02  0.561850E-02  0.642115E-02  0.722379E-02
+          ... 
+  0.159726    
+
+
+ __________________________________________________________________________
+
+ Number of Source   depths, Sz =            1
+ Source   depths, Sz (m)
+   4.00000    
+
+
+ __________________________________________________________________________
+
+ Number of Receiver depths, Rz =          200
+ Receiver depths, Rz (m)
+   0.00000      0.396586      0.793173       1.18976       1.58635    
+   1.98293       2.37952       2.77610       3.17269       3.56928    
+          ... 
+   78.9207    
+
+
+ __________________________________________________________________________
+
+ Number of receiver range offsets (array tilt), Rro =          200
+ receiver range offsets (array tilt), Rro (m)
+   0.00000       0.00000       0.00000       0.00000       0.00000    
+   0.00000       0.00000       0.00000       0.00000       0.00000    
+          ... 
+   0.00000    
+
+
+ Field completed successfully

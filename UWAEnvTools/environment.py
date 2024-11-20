@@ -20,7 +20,6 @@ import UWAEnvTools.surface as surface
 import UWAEnvTools.directories_and_files as _dirs
 
 
-
 # ARL extra modules
 import arlpy.uwapm as pm
 import haversine
@@ -136,7 +135,7 @@ class Environment():
         
         
     def set_seabed_common(
-            self            
+            self
             ):
         bottom_profile = seabed.SeaBed(self.bathymetry.lat_basis_trimmed,
                                 self.bathymetry.lon_basis_trimmed,
@@ -144,7 +143,7 @@ class Environment():
         bottom_profile.read_default_dictionary()
         bottom_profile.assign_single_bottom_type(self.location.bottom_id)
         self.bottom_profile = bottom_profile
-        self.set_seabed()
+        # self.set_seabed()
 
     
     def set_surface_common(self):
@@ -205,21 +204,21 @@ class Environment_RAM(Environment):
         self.DELTA_R_RAM = dr
     
     def set_ssp(self,
-                roughness = [0.5,0.5],
-                ssp_selection = 'Summer',
+                p_ssp,
                 ssp_ranges = np.array([1]) # in m
                 ):   
         """
         """
+        self.ssp = p_ssp
         self.ssp_depths = self.ssp.depths
         self.ssp_r = ssp_ranges
-        self.ssp_c = self.ssp.dict[ssp_selection]
+        self.ssp_c = self.ssp.dict['Winter']
         self.ssp_c = np.reshape(self.ssp_c,
                                 (len(self.ssp_c),len(self.ssp_r))
                                 )
        
         
-    def set_seabed(self):
+    def set_seabed(self,bottomprofile):
         """
         Takes the arrays in seabed_drdc.bottom_type_profile and takes the first value
         In the future may want to account for non-uniformity.
@@ -227,9 +226,10 @@ class Environment_RAM(Environment):
         indicate that isn't an issue compared to geometry and SSP
         
         """      
-        self.seabed_rho = self.bottom_profile.bottom_type_profile['Rho'][0][0]
-        self.seabed_c = self.bottom_profile.bottom_type_profile['c'][0][0]        
-        self.seabed_alpha = self.bottom_profile.bottom_type_profile['alpha'][0][0]
+        self.bottom_profile = bottomprofile
+        self.seabed_rho = self.bottom_profile.bottom_type_profile['Rho'][0]
+        self.seabed_c = self.bottom_profile.bottom_type_profile['c'][0]       
+        self.seabed_alpha = self.bottom_profile.bottom_type_profile['alpha'][0]
     
 
     def create_environment_model(self,
@@ -532,21 +532,20 @@ class Environment_RAM(Environment):
             y_nominal_track,
             color='r',
             marker='.',
-            label='nominal track')
-        
+            label='nominal track')       
 
     
 class Environment_PYAT(Environment):
     
     def set_ssp(self,
-                roughness = [0.5,0.5],
-                ssp_selection = 'Summer'):   
+                p_ssp):   
         """
         """
+        self.ssp = p_ssp
         depths = [0,self.ssp.depths[-1]]
         ssp1 = pyat.pyat.env.SSPraw(
             self.ssp.depths, 
-            self.ssp.dict[ssp_selection],
+            self.ssp.dict['Winter'],
             0*np.ones(self.ssp.depths.shape), # water has no shear speed, betaR
             np.ones(self.ssp.depths.shape), # density of water = 1kg/L, rho
             0*np.ones(self.ssp.depths.shape), # water has no attenuation, alphaI
@@ -571,20 +570,27 @@ class Environment_PYAT(Environment):
         ALSO SETS SURFACE BOUNDARY CONDITION
         #TODO: Separate this from the bottom setting.
         """
-        self.set_seabed_common(seabed_drdc)
+        # self.set_seabed_common(seabed_drdc)
+        self.bottom_profile = seabed_drdc
         hs = pyat.pyat.env.HS(
-            alphaR=seabed_drdc.bottom_type_profile['c'][0][0],
+            alphaR=seabed_drdc.bottom_type_profile['c'][0],
             betaR=p_betaR, #unknown what this is
-            rho = seabed_drdc.bottom_type_profile['Rho'][0][0],
-            alphaI=seabed_drdc.bottom_type_profile['alpha'][0][0],
+            rho = seabed_drdc.bottom_type_profile['Rho'][0],
+            alphaI=seabed_drdc.bottom_type_profile['alpha'][0],
             betaI=p_betaI) #unknow what this is
+        # hs = pyat.pyat.env.HS(
+        #     alphaR=seabed_drdc.bottom_type_profile['c'][0][0],
+        #     betaR=p_betaR, #unknown what this is
+        #     rho = seabed_drdc.bottom_type_profile['Rho'][0][0],
+        #     alphaI=seabed_drdc.bottom_type_profile['alpha'][0][0],
+        #     betaI=p_betaI) #unknow what this is
         Opt = 'A~'
         bottom = pyat.pyat.env.BotBndry(Opt, hs)
         top = pyat.pyat.env.TopBndry('CVW')
         self.bdy = pyat.pyat.env.Bndry(top, bottom)
 
         self.cInt = Empty()
-        self.cInt.High = seabed_drdc.bottom_type_profile['c'][0][0]+1 #assumes 2d array passed.
+        self.cInt.High = seabed_drdc.bottom_type_profile['c'][0]+1 #assumes 2d array passed.
         self.cInt.Low = 0 # compute automatically, not sure what this means.
     
     def set_surface(self,surface):
@@ -630,6 +636,9 @@ class Environment_ARL(Environment):
         
     def set_surface(self,surface):
         self.set_surface_common(surface)
+
+    def set_ssp(self,ssp):
+        self.ssp = ssp
 
     def create_environment_model(self,
                                  rx_lat_lon_tuple,

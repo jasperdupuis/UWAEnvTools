@@ -22,24 +22,27 @@ sys.path.insert(1,r'C:\Users\Jasper\Desktop\MASC\python-packages\pyat')
 import pyat
 
 #my modules
-from env.environment import create_basis_common,Environment_ARL,Environment_PYAT,Environment_RAM
-from env.bathymetry import Bathymetry_WOD
-from env.ssp import SSP_Blouin_2015, SSP_Munk, SSP_Isovelocity
-from env.seabed import SeaBed
-from env.surface import Surface
-from env.locations import Location
-import env.comparison_setup
+from UWAEnvTools.environment import create_basis_common,Environment_ARL,Environment_PYAT,Environment_RAM
+from UWAEnvTools.bathymetry import Bathymetry_WOD
+from UWAEnvTools.ssp import SSP_Blouin_2015, SSP_Munk, SSP_Isovelocity
+from UWAEnvTools.seabed import SeaBed
+from UWAEnvTools.surface import Surface
+from UWAEnvTools.locations import Location
+import UWAEnvTools.comparison_setup
 
-import source
-import KRAKEN_functions
+import UWAEnvTools.source
+from UWAEnvTools.KRAKEN_functions import calculate_modes_and_pressure_field
 
 LOCATION = 'Patricia Bay'
 the_location = Location(LOCATION) 
+# HYDRO= 'North'
+HYDRO ='South'
 
 # Parameters to manipulate
 # FREQS = [10.,12.5,16.,20.,25.,31.5,40.,50.,63.,80.,100.,125.,160.,200.,250.,315.,400.,500.]
 # FREQS = [40,50,63,80,100,125,160,200,250,315,400,500] #These freqs do work
-FREQS = [40,100,200,500] #These freqs do work
+# FREQS = [40,100,200,500] #These freqs do work
+
 # FREQS = [10.,12.5,16.,20.,25.,31.5] # These freqs dont work
 RX_HYD_DEPTH = 15 # m
 TX_DEPTH = 4
@@ -56,7 +59,7 @@ KRAKEN_ROUGHNESS = [0.1,0.1] # Doesn't change anything apparently
 RAM_DELTA_R = 1 # m, range step size
 RAM_DELTA_Z = 1 # m, depth step size, not currently used by me (Default is computed in pyram)
     
-THE_SOURCE, env_ARL, env_PYAT, env_RAM = env.comparison_setup.setup(
+THE_SOURCE, env_ARL, env_PYAT, env_RAM = UWAEnvTools.comparison_setup.setup(
         the_location,
         p_source_depth = TX_DEPTH,
           p_course_heading = COURSE_heading,
@@ -79,10 +82,27 @@ lon_start = THE_SOURCE.course[0][1]
 # rx_loc = (lat_end,lon_end)
 """
 For Pat Bay, hyd1 is the NORTH hydro, hyd2 is the SOUTH hydro.
-
 """
-rx_loc  = (the_location.hyd_1_lat,the_location.hyd_1_lon)
-rx_z    = (the_location.hyd_1_z,the_location.hyd_1_z)
+
+if HYDRO == 'North':
+    # # NORTH HYDROPHONE
+    rx_loc  = (the_location.hyd_1_lat,the_location.hyd_1_lon)
+    rx_z    = the_location.hyd_1_z
+    
+    f1= np.arange(30,44) # freq 44 doesn't work for North.
+    f2= np.arange(45,74) # freq 74 doesn't work for North
+    f3= np.arange(75,301) # freq 74 doesn't work for North
+    FREQS = np.concatenate((f1, f2, f3))
+
+if HYDRO == 'South':
+    # # SOUTH HYDROPHONE
+    rx_loc  = (the_location.hyd_2_lat,the_location.hyd_2_lon)
+    rx_z    = the_location.hyd_2_z
+    f1= np.arange(30,44) # freq 44 doesn't work for South.
+    f2= np.arange(45,74) # freq 74 doesn't work for North
+    f3= np.arange(75,301) 
+    # FREQS = f2
+    FREQS = np.concatenate((f1,f2,f3))
 
 for FREQ in FREQS:
     #
@@ -144,7 +164,7 @@ for FREQ in FREQS:
                 )
         
         modes, bandwidth, Pos1,pressure, rx_depths_index = \
-            KRAKEN_functions.calculate_modes_and_pressure_field(
+            calculate_modes_and_pressure_field(
                 env_kraken,
                 SOURCE_DEPTH = THE_SOURCE.depth,
                 BASIS_SIZE_distance = BASIS_SIZE_distance,
@@ -186,7 +206,7 @@ for FREQ in FREQS:
     
     
     # Save data
-    with open('results/ferguson/data/patbay_'+str(FREQ)+'.txt', 'w') as f:
+    with open('results/patricia_bay/'+HYDRO+'/data/patbay_'+str(FREQ)+'.txt', 'w') as f:
         f.write('X_RAM (m):')
         for entry in x_ram: f.write(str(entry)+',')
         f.write('\nY_RAM (dB):')
@@ -202,6 +222,7 @@ for FREQ in FREQS:
     
     
     # Generate plot
+    plt.figure()
     plt.plot(x_bell,20*np.log10(np.abs(y_bell)),label='BELLHOP')
     plt.plot(x_krak,y_krak,label='KRAKEN')
     plt.plot(x_ram,y_ram,label='RAM')
@@ -212,7 +233,7 @@ for FREQ in FREQS:
     plt.ylim(-60,-20)
     plt.legend()
     plt.savefig( dpi = 300,
-                fname = 'results/ferguson/png/ferguson_'+str(FREQ)+'.png')
+                fname = 'results/patricia_bay/'+HYDRO+'/png/patricia_'+str(FREQ)+'.png')
     plt.savefig(dpi = 300,
-                fname = 'results/ferguson/pdf/ferguson_'+str(FREQ)+'.pdf')
+                fname = 'results/patricia_bay/'+HYDRO+'/pdf/patricia_'+str(FREQ)+'.pdf')
     plt.close('all')

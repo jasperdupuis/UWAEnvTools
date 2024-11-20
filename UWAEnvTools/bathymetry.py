@@ -194,12 +194,14 @@ class Bathymetry():
         # reversing the original colormap using reversed() function
         reversed_map=orig_map
         # reversed_map = orig_map.reversed()
-        fig,ax = plt.subplots(1, 1,figsize=(12,7))
-        im = ax.imshow(self.z_plot ,
+        fig,ax = plt.subplots(1, 1,figsize=(8,5))
+        im = ax.imshow(np.abs(self.z_plot) ,
             extent = ext,
             cmap = reversed_map,
             origin = 'lower',
             aspect = 'auto');
+        cbar = plt.colorbar(im)
+        cbar.set_label('Depth (m)')
         # Include the hydrophone coordinates in the extent image
         if p_type =='extent':    
             lons = np.array(
@@ -217,7 +219,7 @@ class Bathymetry():
             if p_unit =='m':
                 lons,lats = self.convert_latlon_to_xy_m(p_location, lats, lons)
             ax.scatter(lons,lats,marker='X',color='red')
-        plt.colorbar(im)
+        # plt.colorbar(im)
         return fig,ax
 
 
@@ -336,8 +338,16 @@ class Bathymetry_CHS_10_100(Bathymetry):
 class Bathymetry_CHS_2(Bathymetry_CHS_10_100):
     """
     Has a different ASCII format, comma separator not tab.
+
+    Hackery to get around bad use of N_lon_steps and N_lat_steps issue; these
+    were assigned in CHS_10_100 methods and i don't want to break the
+    inheritance at this time.
+
     """
-    def read_bathy(self,fname):
+
+    def read_bathy(self,fname,p_n_lats=200,p_n_lons=200):
+        self.N_lat_steps = p_n_lats # Hackery
+        self.N_lon_steps = p_n_lons # Hackery
         df = pd.read_csv(fname,sep=',',encoding="UTF-8")
         cols = df.columns 
         # index 0: lat, index 1: lon, index 2: depth in m
@@ -361,7 +371,6 @@ class Bathymetry_WOD(Bathymetry):
     """
     For interface with WOD provided data.
     """
-
 
     def read_bathy(self,fname):
         ds = Dataset(fname)
